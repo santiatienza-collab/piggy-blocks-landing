@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piggy Blocks – The colorful block puzzle with piggies | Android</title>
+<meta name="description" content="Piggy Blocks is a colorful arcade block puzzle for Android with ARCADE and MARATHON modes, 3 difficulties, world online ranking and 11 languages. Free on Google Play.">
+
+<!-- Vista previa al compartir el enlace (Reddit, Twitter, WhatsApp...) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Piggy Blocks – the colorful block puzzle with piggies">
+<meta property="og:description" content="ARCADE (100 levels) and MARATHON (200 levels), steel blocks, rising pink lines, super lines and a world online ranking. Free on Google Play.">
+<meta property="og:image" content="https://santiatienza-collab.github.io/piggy-blocks-landing/assets/img/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#120A2A">
+<link rel="icon" href="assets/img/icon.webp" type="image/webp">
+
+<style>
+  /* La misma fuente que el juego: DynaPuff Bold (licencia OFL). */
+  @font-face {
+    font-family: "DynaPuff";
+    src: url("assets/fonts/dynapuff_bold.ttf") format("truetype");
+    font-weight: 700;
+    font-display: swap;
+  }
+
+  :root {
+    /* Paleta del tema "Psicodélico" del juego */
+    --rosa: #FF2ED1;
+    --rosa-claro: #FFA6E8;
+    --morado: #9B30FF;
+    --cian: #00E5FF;
+    --verde: #39FF14;
+    --amarillo: #FFD400;
+    --fondo: #120A2A;
+    --fondo-claro: #231454;
+    --texto: #F3ECFF;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "DynaPuff", "Trebuchet MS", system-ui, sans-serif;
+    font-weight: 700;
+    color: var(--texto);
+    background: var(--fondo);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.45;
+  }
+
+  /* Fondo degradado animado, como el de las pantallas del juego */
+  .fondo {
+    position: fixed; inset: 0; z-index: -2;
+    background: linear-gradient(135deg, #2A0A55, #7B1FA2, #0B6E8C, #1E7A2E, #7A5A12, #2A0A55);
+    background-size: 400% 400%;
+    animation: fondoMueve 28s ease-in-out infinite;
+  }
+  .fondo::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(255,46,209,.18), transparent 60%), rgba(18,10,42,.35); }
+  @keyframes fondoMueve { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+  /* Piezas de colores cayendo por detrás */
+  #piezas { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+  .pieza { position: absolute; top: -120px; opacity: .38; animation: cae linear infinite; }
+  .pieza i { position: absolute; border-radius: 4px; box-shadow: inset 0 3px 0 rgba(255,255,255,.35), inset 0 -3px 0 rgba(0,0,0,.25); }
+  @keyframes cae {
+    from { transform: translateY(0) rotate(var(--giro-ini)); }
+    to   { transform: translateY(calc(100vh + 240px)) rotate(var(--giro-fin)); }
+  }
+
+  /* Las imágenes conservan siempre su proporción (sin estirarse aunque tengan width/height en el HTML). */
+  img { max-width: 100%; height: auto; }
+
+  a { color: inherit; }
+  .contenedor { width: min(1120px, 92%); margin: 0 auto; }
+
+  /* ---------- Barra superior ---------- */
+  header.barra { padding: 18px 0; }
+  header.barra .contenedor { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .marca { display: flex; align-items: center; gap: 10px; text-decoration: none; font-size: 1.15rem; color: var(--rosa-claro); text-shadow: 0 0 14px rgba(255,46,209,.8); }
+  .marca img { width: 42px; height: 42px !important; object-fit: cover; border-radius: 12px; box-shadow: 0 0 16px rgba(255,46,209,.6); }
+  .idiomas { display: flex; gap: 6px; }
+  .idiomas button {
+    font: inherit; font-size: .85rem; cursor: pointer; color: var(--texto);
+    background: rgba(35,20,84,.8); border: 2px solid rgba(255,255,255,.25); border-radius: 999px; padding: 6px 14px;
+  }
+  .idiomas button[aria-pressed="true"] { background: var(--cian); color: var(--fondo); border-color: var(--cian); box-shadow: 0 0 14px rgba(0,229,255,.7); }
+
+  /* ---------- Hero ---------- */
+  .hero { text-align: center; padding: 20px 0 60px; position: relative; }
+  .etiqueta { display: inline-block; font-size: .85rem; letter-spacing: .12em; color: var(--fondo); background: var(--amarillo); border-radius: 999px; padding: 6px 16px; box-shadow: 0 0 18px rgba(255,212,0,.6); transform: rotate(-2deg); }
+  .corazon-zona { position: relative; width: min(520px, 86vw); margin: 18px auto 0; }
+  .corazon { width: 100%; display: block; animation: flota 5s ease-in-out infinite; filter: drop-shadow(0 18px 30px rgba(0,0,0,.45)); }
+  .cerdo-lado { position: absolute; width: 26%; filter: drop-shadow(0 10px 14px rgba(0,0,0,.4)); }
+  .cerdo-lado.izq { left: -17%; bottom: 2%; animation: salta 2.6s ease-in-out infinite; }
+  .cerdo-lado.der { right: -17%; bottom: 4%; animation: salta 2.6s ease-in-out .9s infinite; }
+  @media (max-width: 720px) { .cerdo-lado { display: none; } }
+  @keyframes flota { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-14px) rotate(1deg); } }
+  @keyframes salta { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-18px) rotate(4deg); } }
+
+  h1.titulo {
+    font-size: clamp(2.6rem, 9vw, 5.2rem); line-height: 1; margin-top: 10px; letter-spacing: .02em;
+    color: var(--rosa-claro);
+    text-shadow: 0 0 10px var(--rosa), 0 0 28px var(--rosa), 0 0 56px rgba(255,46,209,.8);
+    animation: neon 3s ease-in-out infinite;
+  }
+  @keyframes neon { 0%,100% { text-shadow: 0 0 10px var(--rosa), 0 0 28px var(--rosa), 0 0 56px rgba(255,46,209,.8); } 50% { text-shadow: 0 0 6px var(--rosa), 0 0 16px var(--rosa), 0 0 32px rgba(255,46,209,.6); } }
+  .lema { font-size: clamp(1.05rem, 2.6vw, 1.5rem); margin: 18px auto 0; max-width: 760px; color: var(--texto); }
+  .modos { margin-top: 14px; font-size: clamp(.95rem, 2.4vw, 1.2rem); color: var(--amarillo); letter-spacing: .08em; text-shadow: 0 0 12px rgba(255,212,0,.6); }
+
+  /* Botón de descarga con el estilo del START del juego */
+  .cta {
+    display: inline-flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none;
+    margin-top: 28px; padding: 16px 38px; border-radius: 26px;
+    background: #0D0620; border: 5px solid var(--verde); color: var(--verde);
+    font-size: clamp(1.15rem, 3.2vw, 1.7rem); letter-spacing: .04em;
+    text-shadow: 0 0 12px var(--verde);
+    box-shadow: 0 0 22px rgba(57,255,20,.65), inset 0 0 14px rgba(57,255,20,.25);
+    transform: rotate(-2deg); transition: transform .2s, box-shadow .2s;
+    position: relative; overflow: hidden;
+    animation: latido 2.2s ease-in-out infinite;
+  }
+  .cta small { font-size: .62em; color: var(--texto); text-shadow: none; opacity: .85; }
+  .cta::after { content: ""; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent); transform: skewX(-20deg); animation: brillo 3.4s ease-in-out infinite; }
+  .cta:hover { transform: rotate(0deg) scale(1.07); box-shadow: 0 0 36px rgba(57,255,20,.95), inset 0 0 18px rgba(57,255,20,.4); }
+  @keyframes latido { 0%,100% { box-shadow: 0 0 22px rgba(57,255,20,.65), inset 0 0 14px rgba(57,255,20,.25); } 50% { box-shadow: 0 0 40px rgba(57,255,20,.95), inset 0 0 20px rgba(57,255,20,.4); } }
+  @keyframes brillo { 0% { left: -60%; } 55%,100% { left: 130%; } }
+  .nota { margin-top: 14px; font-size: .9rem; opacity: .9; }
+
+  /* ---------- Secciones ---------- */
+  section { padding: 56px 0; }
+  h2 {
+    text-align: center; font-size: clamp(1.7rem, 5vw, 2.8rem); margin-bottom: 34px; color: var(--cian);
+    text-shadow: 0 0 14px rgba(0,229,255,.85);
+  }
+
+  .tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 22px; }
+  .tarjeta {
+    border: 4px solid transparent; border-radius: 26px; padding: 26px 22px 24px; position: relative;
+    background: linear-gradient(var(--fondo-claro), var(--fondo-claro)) padding-box,
+                linear-gradient(135deg, var(--rosa), var(--cian), var(--verde), var(--amarillo)) border-box;
+    box-shadow: 0 12px 30px rgba(0,0,0,.35);
+    transition: transform .25s;
+  }
+  .tarjeta:hover { transform: translateY(-8px) rotate(-1deg); }
+  .tarjeta .icono { font-size: 2.4rem; display: block; margin-bottom: 8px; animation: bota 2.4s ease-in-out infinite; }
+  .tarjeta:nth-child(2n) .icono { animation-delay: .5s; }
+  .tarjeta:nth-child(3n) .icono { animation-delay: 1s; }
+  @keyframes bota { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.12); } }
+  .tarjeta h3 { font-size: 1.35rem; color: var(--amarillo); margin-bottom: 8px; text-shadow: 0 0 10px rgba(255,212,0,.5); }
+  .tarjeta p { font-size: 1rem; opacity: .95; font-weight: 700; }
+
+  /* Capturas dentro de marcos de móvil */
+  .capturas { display: flex; gap: 26px; overflow-x: auto; padding: 18px 8px 34px; scroll-snap-type: x mandatory; }
+  .capturas::-webkit-scrollbar { height: 10px; }
+  .capturas::-webkit-scrollbar-thumb { background: var(--rosa); border-radius: 10px; }
+  .movil {
+    flex: 0 0 auto; width: 230px; border-radius: 34px; padding: 8px; scroll-snap-align: center;
+    background: linear-gradient(160deg, var(--rosa), var(--morado), var(--cian));
+    box-shadow: 0 16px 40px rgba(0,0,0,.5), 0 0 26px rgba(155,48,255,.55);
+    transition: transform .3s;
+  }
+  .movil:nth-child(odd) { transform: rotate(-2.5deg); }
+  .movil:nth-child(even) { transform: rotate(2.5deg) translateY(14px); }
+  .movil:hover { transform: rotate(0) scale(1.06) translateY(-6px); }
+  .movil img { width: 100%; height: auto; aspect-ratio: 1 / 2; object-fit: cover; display: block; border-radius: 27px; background: var(--fondo); }
+
+  /* Franja de cerditos */
+  .cerditos { display: flex; justify-content: center; align-items: flex-end; gap: clamp(6px, 3vw, 34px); flex-wrap: wrap; padding: 10px 0 0; }
+  .cerditos img { width: clamp(78px, 15vw, 150px); filter: drop-shadow(0 10px 14px rgba(0,0,0,.45)); animation: salta 2.4s ease-in-out infinite; }
+  .cerditos img:nth-child(2n) { animation-delay: .4s; }
+  .cerditos img:nth-child(3n) { animation-delay: .8s; }
+
+  .final { text-align: center; }
+  .final p { max-width: 640px; margin: 0 auto 8px; font-size: 1.15rem; }
+
+  footer { text-align: center; padding: 34px 0 44px; font-size: .9rem; opacity: .9; }
+  footer a { color: var(--cian); text-decoration: none; margin: 0 10px; }
+  footer a:hover { text-decoration: underline; }
+  footer p { margin-top: 10px; font-size: .8rem; opacity: .75; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    #piezas { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="fondo" aria-hidden="true"></div>
+<div id="piezas" aria-hidden="true"></div>
+
+<header class="barra">
+  <div class="contenedor">
+    <a class="marca" href="#">
+      <img src="assets/img/icon.webp" alt="Piggy Blocks icon" width="42" height="42">
+      <span>PIGGY BLOCKS</span>
+    </a>
+    <div class="idiomas" role="group" aria-label="Language">
+      <button type="button" data-idioma="en" aria-pressed="true">EN</button>
+      <button type="button" data-idioma="es" aria-pressed="false">ES</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ================= HERO ================= -->
+  <div class="hero">
+    <div class="contenedor">
+      <span class="etiqueta" data-en="NEW INDIE GAME · ANDROID" data-es="NUEVO JUEGO INDIE · ANDROID">NEW INDIE GAME · ANDROID</span>
+
+      <div class="corazon-zona">
+        <img class="corazon" src="assets/img/heart.webp" alt="Piggy Blocks logo: a happy piggy bursting out of a heart made of colorful blocks">
+        <img class="cerdo-lado izq" src="assets/img/cerdo_dab.webp" alt="" aria-hidden="true">
+        <img class="cerdo-lado der" src="assets/img/cerdo_pulgar.webp" alt="" aria-hidden="true">
+      </div>
+
+      <h1 class="titulo">PIGGY BLOCKS</h1>
+      <p class="lema" data-en="The colorful block puzzle where a crew of piggies cheers every line you clear."
+         data-es="El puzzle de bloques más colorido, donde un grupo de cerditos celebra cada línea que completas.">The colorful block puzzle where a crew of piggies cheers every line you clear.</p>
+      <p class="modos">ARCADE · <span data-en="MARATHON" data-es="MARATÓN">MARATHON</span> · <span data-en="WORLD RANKING" data-es="RANKING MUNDIAL">WORLD RANKING</span></p>
+
+      <a class="cta play-link" href="https://play.google.com/store/apps/details?id=com.piggyblocks.miapp" target="_blank" rel="noopener">
+        <span data-en="GET IT ON GOOGLE PLAY" data-es="CONSÍGUELO EN GOOGLE PLAY">GET IT ON GOOGLE PLAY</span>
+        <small data-en="Free · Play offline · 11 languages" data-es="Gratis · Juega sin conexión · 11 idiomas">Free · Play offline · 11 languages</small>
+      </a>
+      <p class="nota" data-en="Made by a solo indie dev 🐷 — feedback is very welcome!" data-es="Hecho por un desarrollador indie 🐷 — ¡tus comentarios son muy bienvenidos!">Made by a solo indie dev 🐷 — feedback is very welcome!</p>
+    </div>
+  </div>
+
+  <!-- ================= CARACTERÍSTICAS ================= -->
+  <section id="caracteristicas">
+    <div class="contenedor">
+      <h2 data-en="Why you'll love it" data-es="Por qué te va a encantar">Why you'll love it</h2>
+      <div class="tarjetas">
+        <article class="tarjeta">
+          <span class="icono">🎮</span>
+          <h3 data-en="Two game modes" data-es="Dos modos de juego">Two game modes</h3>
+          <p data-en="ARCADE: 100 levels, each starting with a fresh board of obstacles. MARATHON: up to 200 non-stop levels with backgrounds and colors that change every 10 levels."
+             data-es="ARCADE: 100 niveles, cada uno con un tablero nuevo lleno de obstáculos. MARATÓN: hasta 200 niveles sin pausas, con fondos y colores que cambian cada 10 niveles.">ARCADE: 100 levels, each starting with a fresh board of obstacles. MARATHON: up to 200 non-stop levels with backgrounds and colors that change every 10 levels.</p>
+        </article>
+        <article class="tarjeta">
+          <span class="icono">🔥</span>
+          <h3 data-en="Three difficulties" data-es="Tres dificultades">Three difficulties</h3>
+          <p data-en="Easy to relax. Hard adds steel blocks and pink lines rising from the bottom. Impossible adds a piece limit per level."
+             data-es="Fácil para relajarte. Difícil añade bloques de acero y líneas rosas que suben desde abajo. Imposible añade un límite de piezas por nivel.">Easy to relax. Hard adds steel blocks and pink lines rising from the bottom. Impossible adds a piece limit per level.</p>
+        </article>
+        <article class="tarjeta">
+          <span class="icono">🌍</span>
+          <h3 data-en="World online ranking" data-es="Ranking mundial online">World online ranking</h3>
+          <p data-en="Compete with players around the world. Sign in with Google or play as a guest, with separate leaderboards for each mode and difficulty."
+             data-es="Compite con jugadores de todo el mundo. Inicia sesión con Google o juega sin cuenta, con rankings separados por modo y dificultad.">Compete with players around the world. Sign in with Google or play as a guest, with separate leaderboards for each mode and difficulty.</p>
+        </article>
+        <article class="tarjeta">
+          <span class="icono">✨</span>
+          <h3 data-en="Super lines" data-es="Superlíneas">Super lines</h3>
+          <p data-en="Clear 4 lines at once and watch a piggy run across the screen to celebrate with a rainbow sweep."
+             data-es="Completa 4 líneas de golpe y mira a un cerdito cruzar la pantalla celebrándolo con un barrido arcoíris.">Clear 4 lines at once and watch a piggy run across the screen to celebrate with a rainbow sweep.</p>
+        </article>
+        <article class="tarjeta">
+          <span class="icono">🏅</span>
+          <h3 data-en="Records & medals" data-es="Récords y medallas">Records & medals</h3>
+          <p data-en="Your personal record is always on the board, and you earn silent medals when you reach levels 10, 25, 50, 75, 100, 150 and 200 in Marathon."
+             data-es="Tu récord personal siempre a la vista, y consigues medallas silenciosas al llegar a los niveles 10, 25, 50, 75, 100, 150 y 200 de Maratón.">Your personal record is always on the board, and you earn silent medals when you reach levels 10, 25, 50, 75, 100, 150 and 200 in Marathon.</p>
+        </article>
+        <article class="tarjeta">
+          <span class="icono">🌐</span>
+          <h3 data-en="11 languages" data-es="11 idiomas">11 languages</h3>
+          <p data-en="English, Spanish, French, Portuguese, German, Russian, Chinese, Arabic, Hindi, Indonesian and Turkish."
+             data-es="Español, inglés, francés, portugués, alemán, ruso, chino, árabe, hindi, indonesio y turco.">English, Spanish, French, Portuguese, German, Russian, Chinese, Arabic, Hindi, Indonesian and Turkish.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CAPTURAS ================= -->
+  <section id="capturas">
+    <div class="contenedor">
+      <h2 data-en="See it in action" data-es="Míralo en acción">See it in action</h2>
+      <div class="capturas">
+        <figure class="movil"><img loading="lazy" src="assets/img/shot-menu.jpg" alt="Piggy Blocks main menu" width="480" height="960"></figure>
+        <figure class="movil"><img loading="lazy" src="assets/img/shot-game.jpg" alt="Gameplay with colorful blocks" width="480" height="960"></figure>
+        <figure class="movil"><img loading="lazy" src="assets/img/shot-superline.jpg" alt="A super line with the running piggy" width="480" height="960"></figure>
+        <figure class="movil"><img loading="lazy" src="assets/img/shot-levelup.jpg" alt="Level up celebration" width="480" height="960"></figure>
+        <figure class="movil"><img loading="lazy" src="assets/img/shot-languages.jpg" alt="Language selection, 11 languages" width="480" height="960"></figure>
+        <figure class="movil"><img loading="lazy" src="assets/img/shot-gameover.jpg" alt="Game over screen" width="480" height="960"></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= LLAMADA FINAL ================= -->
+  <section class="final">
+    <div class="contenedor">
+      <h2 data-en="Ready to leave your name on the ranking?" data-es="¿Listo para dejar tu nombre en el ranking?">Ready to leave your name on the ranking?</h2>
+      <div class="cerditos" aria-hidden="true">
+        <img loading="lazy" src="assets/img/cerdo_patinete.webp" alt="">
+        <img loading="lazy" src="assets/img/cerdo_yoga.webp" alt="">
+        <img loading="lazy" src="assets/img/cerdo_corredor.webp" alt="">
+        <img loading="lazy" src="assets/img/cerdo_nivel2.webp" alt="">
+        <img loading="lazy" src="assets/img/cerdo_nivel3.webp" alt="">
+      </div>
+      <a class="cta play-link" href="https://play.google.com/store/apps/details?id=com.piggyblocks.miapp" target="_blank" rel="noopener">
+        <span data-en="GET IT ON GOOGLE PLAY" data-es="CONSÍGUELO EN GOOGLE PLAY">GET IT ON GOOGLE PLAY</span>
+        <small data-en="Free · Contains ads" data-es="Gratis · Contiene anuncios">Free · Contains ads</small>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="contenedor">
+    <!-- Páginas de la política de privacidad y de eliminación de cuenta (repositorio piggyblocks-privacy) -->
+    <a href="https://santiatienza-collab.github.io/piggyblocks-privacy/" data-en="Privacy Policy" data-es="Política de privacidad">Privacy Policy</a>
+    <a href="https://santiatienza-collab.github.io/piggyblocks-privacy/eliminar-cuenta.html" data-en="Delete account / data" data-es="Eliminar cuenta / datos">Delete account / data</a>
+    <p>Google Play and the Google Play logo are trademarks of Google LLC.</p>
+  </div>
+</footer>
+
+<script>
+  // ---- Cambio de idioma EN / ES (por defecto, el del navegador) ----
+  (function () {
+    var botones = document.querySelectorAll('.idiomas button');
+    function poner(idioma) {
+      document.documentElement.lang = idioma;
+      document.querySelectorAll('[data-' + idioma + ']').forEach(function (el) { el.textContent = el.getAttribute('data-' + idioma); });
+      botones.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.idioma === idioma ? 'true' : 'false'); });
+      try { localStorage.setItem('idioma', idioma); } catch (e) {}
+    }
+    botones.forEach(function (b) { b.addEventListener('click', function () { poner(b.dataset.idioma); }); });
+    var guardado = null; try { guardado = localStorage.getItem('idioma'); } catch (e) {}
+    poner(guardado || ((navigator.language || 'en').toLowerCase().indexOf('es') === 0 ? 'es' : 'en'));
+  })();
+
+  // ---- Piezas de colores cayendo por el fondo (como los bloques del juego) ----
+  (function () {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var colores = ['#F44336', '#2196F3', '#FFEB3B', '#4CAF50', '#FF9800', '#00BCD4', '#9C27B0', '#FF2ED1'];
+    var formas = [
+      [[0,0],[1,0],[2,0],[3,0]],         // I
+      [[0,0],[1,0],[0,1],[1,1]],         // O
+      [[0,0],[1,0],[2,0],[1,1]],         // T
+      [[1,0],[2,0],[0,1],[1,1]],         // S
+      [[0,0],[1,0],[1,1],[2,1]],         // Z
+      [[0,0],[0,1],[1,1],[2,1]],         // J
+      [[2,0],[0,1],[1,1],[2,1]]          // L
+    ];
+    var cont = document.getElementById('piezas');
+    var cantidad = window.innerWidth < 700 ? 12 : 22;
+    for (var n = 0; n < cantidad; n++) {
+      var celda = 16 + Math.floor(Math.random() * 18);
+      var forma = formas[Math.floor(Math.random() * formas.length)];
+      var color = colores[Math.floor(Math.random() * colores.length)];
+      var p = document.createElement('div');
+      p.className = 'pieza';
+      p.style.left = (Math.random() * 100) + 'vw';
+      p.style.animationDuration = (18 + Math.random() * 22) + 's';
+      p.style.animationDelay = (-Math.random() * 40) + 's';
+      p.style.setProperty('--giro-ini', (Math.random() * 60 - 30) + 'deg');
+      p.style.setProperty('--giro-fin', (Math.random() * 360 - 180) + 'deg');
+      forma.forEach(function (c) {
+        var i = document.createElement('i');
+        i.style.width = i.style.height = (celda - 2) + 'px';
+        i.style.left = (c[0] * celda) + 'px';
+        i.style.top = (c[1] * celda) + 'px';
+        i.style.background = color;
+        p.appendChild(i);
+      });
+      cont.appendChild(p);
+    }
+  })();
+</script>
+</body>
+</html>
